@@ -1,4 +1,4 @@
-package com.example.smart_solver; // Matches your folder perfectly!
+package com.example.smart_solver;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,19 +23,20 @@ public class VivaController {
     @PostMapping("/api/solve")
     public String solveQuestion(@RequestBody String fullRequest) {
         
-        // --- SECURITY UPGRADE ---
         String apiKey = System.getenv("GEMINI_API_KEY");
         if (apiKey == null || apiKey.isEmpty()) {
-            apiKey = ""; // Keep empty for upload!
+            apiKey = ""; 
         }
         
-        // FIXED: Using version 1.5-flash
         String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
-        String prompt = "Act as a coding tutor. " + fullRequest + 
-                        " After the code, provide the expected output. " +
-                        "CRITICAL: Separate the Code and the Output with the string '#####'. " +
-                        "Do not use markdown blocks (```). Just plain text.";
+        // --- THE NEW STRICT PROMPT ---
+        String prompt = "Task: Write Java code for: " + fullRequest + 
+                        ". Rules: 1. No explanations. 2. No conversational text. " +
+                        "3. Return ONLY the code. " +
+                        "4. After the code, print the string '#####' on a new line. " +
+                        "5. After the #####, print the expected output of the code. " +
+                        "6. Do not use markdown backticks (```).";
 
         Map<String, Object> contentPart = new HashMap<>();
         contentPart.put("text", prompt);

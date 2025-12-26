@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java Lab Report</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #eaeff2; display: flex; justify-content: center; padding: 40px; }
+        .container { width: 100%; max-width: 900px; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        input[type="text"]:focus { border-color: #3498db; }
+        
+        button { padding: 15px 25px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-generate { background-color: #3498db; color: white; }
+        .btn-generate:hover { background-color: #2980b9; }
+        
+        .btn-pdf { background-color: #e74c3c; color: white; display: none; margin-left: auto; } /* Hidden initially */
+        
+        /* RESULT BOXES */
+        .section-title { font-weight: bold; margin-top: 25px; margin-bottom: 10px; color: #34495e; display: flex; align-items: center; gap: 8px; }
+        
+        .code-box { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; white-space: pre-wrap; display: none; }
+        .output-box { background: #f1f2f6; color: #2f3542; padding: 20px; border-radius: 8px; border-left: 5px solid #2ecc71; font-family: 'Courier New', monospace; white-space: pre-wrap; display: none; }
+
+        .loader { display: none; text-align: center; color: #3498db; font-weight: bold; margin-top: 20px; }
+
+        /* PRINT SETTINGS (Makes the PDF look perfect) */
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; width: 100%; max-width: 100%; }
+            .input-group, .btn-generate, .btn-pdf, .subtitle { display: none !important; }
+            .code-box, .output-box { display: block !important; border: 1px solid #ddd; page-break-inside: avoid; }
+            h1::after { content: " - Lab Report"; font-size: 0.6em; color: #666; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Java Lab Assistant</h1>
+        <p class="subtitle">Enter a problem statement to generate Code & Output</p>
+        
+        <div class="input-group">
+            <input type="text" id="question" placeholder="e.g., Write a Java program for Binary Search">
+            <button class="btn-generate" onclick="askAI()">Generate</button>
+        </div>
+
+        <div id="loader" class="loader">Thinking... (Wait 5-10s)</div>
+
+        <div id="code-section" style="display:none;">
+            <div class="section-title">📝 Source Code</div>
+            <div id="code-box" class="code-box"></div>
+        </div>
+
+        <div id="output-section" style="display:none;">
+            <div class="section-title">🖥️ Expected Output</div>
+            <div id="output-box" class="output-box"></div>
+            
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn-pdf" id="pdf-btn" onclick="window.print()">📄 Save as PDF</button>
+            </div>
+        </div>
+    </div>
+
+   <script>
+        async function askAI() {
+            const question = document.getElementById('question').value;
+            const codeBox = document.getElementById('code-box');
+            const outputBox = document.getElementById('output-box');
+            const loader = document.getElementById('loader');
+            const codeSection = document.getElementById('code-section');
+            const outputSection = document.getElementById('output-section');
+            const pdfBtn = document.getElementById('pdf-btn');
+
+            if (!question) return alert("Please enter a question!");
+
+            // 1. UI Reset
+            loader.style.display = 'block';
+            codeSection.style.display = 'none';
+            outputSection.style.display = 'none';
+            pdfBtn.style.display = 'none';
+            codeBox.innerText = "";
+            outputBox.innerText = "";
+
+            try {
+                // YOUR RAILWAY LINK
+                const res = await fetch('https://smart-solver-final-production.up.railway.app/api/solve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: question
+                });
+
+                const rawText = await res.text();
+                let cleanText = rawText;
+
+                // 2. Try to clean up JSON (if it exists)
+                try {
+                    const json = JSON.parse(rawText);
+                    if (json.candidates && json.candidates.length > 0) {
+                        cleanText = json.candidates[0].content.parts[0].text;
+                    }
+                } catch (e) {
+                    console.log("Not JSON, using raw text.");
+                }
+
+                // 3. FAIL-SAFE DISPLAY LOGIC
+                // Check if the specific separator exists
+                if (cleanText.includes('#####')) {
+                    const parts = cleanText.split('#####');
+                    codeBox.innerText = parts[0].trim();
+                    outputBox.innerText = parts[1].trim();
+                } else {
+                    // IF SPLIT FAILS: Show everything in the top box so it's not empty!
+                    codeBox.innerText = cleanText;
+                    outputBox.innerText = "⚠️ The AI didn't separate the output this time. Check the Code Box above.";
+                }
+
+                // 4. Show the boxes
+                loader.style.display = 'none';
+                codeSection.style.display = 'block';
+                outputSection.style.display = 'block';
+                codeBox.style.display = 'block';
+                outputBox.style.display = 'block';
+                pdfBtn.style.display = 'inline-block';
+
+            } catch (error) {
+                loader.style.display = 'none';
+                alert("Connection Error: " + error.message);
+            }
+        }
+    </script>
+
+</body>
+</html>

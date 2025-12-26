@@ -30,7 +30,7 @@ public class VivaController {
         }
         
         // FIXED: Using version 1.5-flash
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
         String prompt = "Act as a coding tutor. " + fullRequest + 
                         " After the code, provide the expected output. " +

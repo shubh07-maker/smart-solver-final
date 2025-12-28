@@ -48,20 +48,20 @@ public class VivaController {
         }
     }
 
-    // FEATURE 1: STRICT CODE MODE
+    // UPDATED: Now accepts ANY language request
     @PostMapping("/api/solve")
     public String solveQuestion(@RequestBody String fullRequest) {
-        String prompt = "Task: Write Java code for: " + fullRequest + 
+        // We removed the word "Java" here. Now it just says "Write code for..."
+        String prompt = "Task: Write code for: " + fullRequest + 
                         ". Rules: 1. No explanations. 2. Return ONLY the code. " +
                         "3. After code, print '#####' on a new line. " +
                         "4. After #####, print expected output. 5. No markdown.";
         return getGeminiResponse(prompt);
     }
 
-    // FEATURE 2: EXPLAIN MODE (New!)
     @PostMapping("/api/explain")
     public String explainQuestion(@RequestBody String fullRequest) {
-        String prompt = "Explain this Java concept or code briefly in simple English: " + fullRequest;
+        String prompt = "Explain this concept or code briefly in simple English: " + fullRequest;
         return getGeminiResponse(prompt);
     }
 }

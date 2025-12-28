@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,23 +19,11 @@ import org.springframework.web.client.RestTemplate;
 @CrossOrigin(origins = "*")
 public class VivaController {
 
-    @PostMapping("/api/solve")
-    public String solveQuestion(@RequestBody String fullRequest) {
-        
+    private String getGeminiResponse(String prompt) {
         String apiKey = System.getenv("GEMINI_API_KEY");
-        if (apiKey == null || apiKey.isEmpty()) {
-            apiKey = ""; 
-        }
-        
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+        if (apiKey == null || apiKey.isEmpty()) return "Error: API Key missing.";
 
-        // --- THE NEW STRICT PROMPT ---
-        String prompt = "Task: Write Java code for: " + fullRequest + 
-                        ". Rules: 1. No explanations. 2. No conversational text. " +
-                        "3. Return ONLY the code. " +
-                        "4. After the code, print the string '#####' on a new line. " +
-                        "5. After the #####, print the expected output of the code. " +
-                        "6. Do not use markdown backticks (```).";
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
 
         Map<String, Object> contentPart = new HashMap<>();
         contentPart.put("text", prompt);
@@ -56,10 +43,25 @@ public class VivaController {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
             return response.getBody();
-        } catch (HttpClientErrorException e) {
-            return "Error: " + e.getStatusText() + " - " + e.getResponseBodyAsString();
         } catch (RestClientException e) {
             return "Error: " + e.getMessage();
         }
+    }
+
+    // FEATURE 1: STRICT CODE MODE
+    @PostMapping("/api/solve")
+    public String solveQuestion(@RequestBody String fullRequest) {
+        String prompt = "Task: Write Java code for: " + fullRequest + 
+                        ". Rules: 1. No explanations. 2. Return ONLY the code. " +
+                        "3. After code, print '#####' on a new line. " +
+                        "4. After #####, print expected output. 5. No markdown.";
+        return getGeminiResponse(prompt);
+    }
+
+    // FEATURE 2: EXPLAIN MODE (New!)
+    @PostMapping("/api/explain")
+    public String explainQuestion(@RequestBody String fullRequest) {
+        String prompt = "Explain this Java concept or code briefly in simple English: " + fullRequest;
+        return getGeminiResponse(prompt);
     }
 }
